@@ -68,34 +68,51 @@ Deno.serve(async (request: Request) => {
 
 		const referralCode = 'REF' + crypto.randomUUID();
 
-		const { data, error } = await supabase.from('user_data').insert([
-			{
-				clerk_user_id: user.id,
-				shop_name: null,
-				user_state: 'Active',
-				last_payment_date: null,
-				next_billing_date: null,
-				trial_start_date: null,
-				trial_end_date: null,
-				cancellation_date: null,
-				additional_notes: '', // Dummy data
-				created_at: new Date(),
-				updated_at: new Date(),
-				subscription_plan: 'Basic', // Dummy data
-				payment_method: 'Credit Card', // Dummy data
-				last_login_date: new Date(), // Insert current timestamp
-				profile_completed: false,
-				referral_code: referralCode, // Generated unique UUID with "REF" prefix
-			},
-		]);
+		// Check if user already exists
+		const { data: existingUser, error: selectError } = await supabase
+			.from('user_data')
+			.select('*')
+			.eq('clerk_user_id', user.id)
+			.single();
 
-		if (error) {
-			console.log('Error inserting user data:', error.message);
-
-			return new Response('Error inserting user data', { status: 500 });
+		if (selectError && selectError.code !== 'PGRST116') {
+			// PGRST116: No results found
+			console.log('Error fetching user data:', selectError.message);
+			return new Response('Error fetching user data', { status: 500 });
 		}
 
-		console.log('User data inserted:', data);
+		if (!existingUser) {
+			const { data, error } = await supabase.from('user_data').insert([
+				{
+					clerk_user_id: user.id,
+					shop_name: null,
+					user_state: 'Active',
+					last_payment_date: null,
+					next_billing_date: null,
+					trial_start_date: null,
+					trial_end_date: null,
+					cancellation_date: null,
+					additional_notes: '', // Dummy data
+					created_at: new Date(),
+					updated_at: new Date(),
+					subscription_plan: 'Basic', // Dummy data
+					payment_method: 'Credit Card', // Dummy data
+					last_login_date: new Date(), // Insert current timestamp
+					profile_completed: false,
+					referral_code: referralCode, // Generated unique UUID with "REF" prefix
+				},
+			]);
+
+			if (error) {
+				console.log('Error inserting user data:', error.message);
+
+				return new Response('Error inserting user data', { status: 500 });
+			}
+
+			console.log('User data inserted:', data);
+		} else {
+			console.log('User already exists. Skipping insertion.');
+		}
 	}
 
 	return new Response(JSON.stringify({ ok: true }), {
