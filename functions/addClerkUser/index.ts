@@ -63,13 +63,11 @@ Deno.serve(async (request: Request) => {
 		const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 		const supabase = createClient(supabaseUrl, supabaseKey);
 
-		const referralCode = 'REF' + crypto.randomUUID();
-
 		// Check if user already exists
 		const { data: existingUser, error: selectError } = await supabase
 			.from('users')
 			.select('*')
-			.eq('id', user.id)
+			.eq('user_id', user.id)
 			.single();
 
 		if (selectError && selectError.code !== 'PGRST116') {
@@ -85,21 +83,10 @@ Deno.serve(async (request: Request) => {
 					email: user.email_addresses[0].email_address,
 					first_name: user.first_name,
 					last_name: user.last_name,
-					shop_name: null,
 					user_state: 'Active',
-					last_payment_date: null,
-					next_billing_date: null,
-					trial_start_date: null,
-					trial_end_date: null,
-					cancellation_date: null,
-					additional_notes: '',
 					created_at: new Date(),
 					updated_at: new Date(),
-					subscription_plan: 'Basic',
-					payment_method: 'Credit Card',
 					last_login_date: new Date(),
-					profile_completed: false,
-					referral_code: referralCode,
 				},
 			]);
 
@@ -110,23 +97,7 @@ Deno.serve(async (request: Request) => {
 
 			console.log('User data inserted:', data);
 		} else {
-			// Update existing user
-			const { data, error } = await supabase
-				.from('users')
-				.update({
-					email: user.email_addresses[0].email_address,
-					first_name: user.first_name,
-					last_name: user.last_name,
-					updated_at: new Date(),
-				})
-				.eq('id', user.id);
-
-			if (error) {
-				console.log('Error updating user data:', error.message);
-				return new Response('Error updating user data', { status: 500 });
-			}
-
-			console.log('User data updated:', data);
+			console.log('User already exists. Skipping insertion.');
 		}
 	}
 

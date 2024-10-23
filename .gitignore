@@ -3,3 +3,5 @@
 .temp
 .env
 .env.local
+.DS_Store
+functions/.DS_Store
